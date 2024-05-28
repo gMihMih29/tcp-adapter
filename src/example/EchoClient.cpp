@@ -7,7 +7,7 @@
 #include "tcp-adapter.hpp"
 
 int main() {
-    TCP::ServerClient clnt;
+    TCP::Client clnt;
     if (!clnt.OpenConnection("127.0.0.1", 8554)) {
         return 0;
     }
@@ -18,11 +18,16 @@ int main() {
         for (int i = 0; i < input.size(); ++i) {
             buf[i] = input[i];
         }
-        if (!clnt.Send(buf, buf.size())) {
+        if (!clnt.Send(buf.data(), buf.size())) {
             std::cout << "Cannot send message\n";
             break;
         }
-        if (!clnt.Recv(buf, buf.size())) {
+        int recv_size = clnt.Recv(buf.data(), buf.size());
+        if (recv_size == 0) {
+            std::cout << "End of transmission\n";
+            break;
+        }
+        if (recv_size < 0) {
             std::cout << "Cannot recv message\n";
             break;
         }

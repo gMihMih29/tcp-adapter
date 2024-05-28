@@ -7,9 +7,10 @@
 
 namespace TCP {
 
-class Client {
+class ClientManager {
 public:
-    ~Client();
+    ClientManager(int socket);
+    ~ClientManager();
 
     bool Send(const char* buffer, size_t buffer_len);
     int Recv(char* buffer, size_t buffer_len);
@@ -17,13 +18,12 @@ public:
     void SetSendFlags(int flag);
     void SetRecvFlags(int flag);
 
-    bool OpenConnection(const char* server_ip, unsigned short port);
     void CloseConnection();
     bool IsConnected() const;
 
 private:
-    bool is_connected_ = false;
-    int socket_ = 0;
+    bool is_connected_;
+    int socket_;
     int send_flags_ = MSG_NOSIGNAL;
     int recv_flags_ = MSG_NOSIGNAL;
 };

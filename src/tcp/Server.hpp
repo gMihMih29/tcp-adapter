@@ -5,24 +5,22 @@
 #include <map>
 #include <memory>
 
-#include "Client.hpp"
+#include "ClientManager.hpp"
 
 namespace TCP {
 
 class Server {
 public:
-    Server(int queue_limit);
-
     ~Server();
 
-    int OpenPort(unsigned short port);
-    int CloseSocket(int socket);
+    bool OpenPort(unsigned short port, int queue_limit);
+    bool ClosePort(unsigned short port);
 
-    std::shared_ptr<Client> WaitForConnection(int socket);
+    std::shared_ptr<ClientManager> WaitForConnection(unsigned short port);
 
 private:
-    std::multimap<int, std::shared_ptr<Client>> sockets_;
-    int queue_limit_;
+    std::multimap<int, std::shared_ptr<ClientManager>> client_managers_by_socket_;
+    std::map<unsigned short, int> sockets_by_port_;
 };
 
 }  // namespace TCP

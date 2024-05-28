@@ -10,26 +10,23 @@
 
 namespace TCP {
 
-Server::Server(int queue_limit) : queue_limit_(queue_limit) {
-    assert(
-        queue_limit > 0 &&
-        "Cannot use negative number for queue limit for incoming connections");
-}
-
 Server::~Server() {
-    for (auto& i : sockets_) {
-        CloseSocket(i.first);
+    for (auto& i : sockets_by_port_) {
+        ClosePort(i.first);
     }
 }
 
-int Server::OpenPort(unsigned short port) {
+bool Server::OpenPort(unsigned short port, int queue_limit) {
     assert(port >= 0 && "Cannot open port with negative number");
+    assert(
+        queue_limit > 0 &&
+        "Cannot use negative number for queue limit for incoming connections");
 
     int sock;
     struct sockaddr_in serv_addr;
 
     if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-        return -1;
+        return false;
     }
 
     memset(&serv_addr, 0, sizeof(serv_addr));
@@ -39,41 +36,47 @@ int Server::OpenPort(unsigned short port) {
 
     if (bind(sock, reinterpret_cast<sockaddr*>(&serv_addr), sizeof(serv_addr)) <
         0) {
-        return -1;
+        return false;
     }
 
-    if (listen(sock, queue_limit_) < 0) {
-        return -1;
+    if (listen(sock, queue_limit) < 0) {
+        return false;
     }
-
-    return sock;
+    sockets_by_port_[port] = sock;
+    return true;
 }
 
-int Server::CloseSocket(int socket) {
-    assert(socket >= 0 && "Cannot open socket with negative number");
-    auto it = sockets_.find(socket);
-    assert(it != sockets_.end() && "Cannot close unopened socket");
-    while (it != sockets_.end() && (*it).first == socket) {
-        (*it).second->CloseConnection();
-        ++it;
+bool Server::ClosePort(unsigned short port) {
+    auto port_sock = sockets_by_port_.find(port);
+    assert(port_sock != sockets_by_port_.end() && "Cannot close unopened port");
+
+    auto sock_client = client_managers_by_socket_.find(port_sock->second);
+    while (sock_client != client_managers_by_socket_.end() &&
+           sock_client->first == port_sock->second) {
+        sock_client->second->CloseConnection();
+        ++sock_client;
     }
-    return sockets_.erase(socket) > 0 ? 0 : -1;
+    client_managers_by_socket_.erase(sock_client->first);
+    return close(port_sock->second) >= 0;
 }
 
-std::shared_ptr<Client> Server::WaitForConnection(int socket) {
+std::shared_ptr<ClientManager> Server::WaitForConnection(unsigned short port) {
+    auto port_sock = sockets_by_port_.find(port);
+    assert(port_sock != sockets_by_port_.end() && "Cannot use unopened port");
+
     int client_socket;
     struct sockaddr_in client_addr;
     unsigned int client_len;
-
     client_len = sizeof(client_addr);
     client_socket =
-        accept(socket, reinterpret_cast<sockaddr*>(&client_addr), &client_len);
+        accept(port_sock->second, reinterpret_cast<sockaddr*>(&client_addr),
+               &client_len);
     if (client_socket < 0) {
-        return std::shared_ptr<Client>(nullptr);
+        return std::shared_ptr<ClientManager>(nullptr);
     }
 
-    std::shared_ptr<Client> res(new Client(client_socket));
-    sockets_.insert(std::make_pair(socket, res));
+    std::shared_ptr<ClientManager> res(new ClientManager(client_socket));
+    client_managers_by_socket_.insert(std::make_pair(port_sock->second, res));
     return res;
 }
 
