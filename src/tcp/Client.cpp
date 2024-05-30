@@ -1,6 +1,7 @@
 #include "Client.hpp"
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,20 +12,49 @@ namespace TCP {
 
 Client::~Client() { CloseConnection(); }
 
-bool Client::Send(const char* buffer, size_t buffer_len) {
+bool Client::Send(const char* buffer, size_t buffer_len, int flag) {
     if (!IsConnected()) {
         return false;
     }
-    return send(socket_, buffer, buffer_len, send_flags_) == buffer_len;
+    bool res = (send(socket_, buffer, buffer_len, flag) == buffer_len);
+    if (!res) {
+        if (errno == EAGAIN) {
+            CloseConnection();
+        } else if (errno == EBADF) {
+            CloseConnection();
+        } else if (errno == EDESTADDRREQ) {
+            CloseConnection();
+        } else if (errno == ECONNRESET) {
+            CloseConnection();
+        } else if (errno == EFAULT) {
+            CloseConnection();
+        } else if (errno == ENOTCONN) {
+            CloseConnection();
+        } else if (errno == ENOTSOCK) {
+            CloseConnection();
+        }
+    }
+    return res;
 }
 
-int Client::Recv(char* buffer, size_t buffer_len) {
+int Client::Recv(char* buffer, size_t buffer_len, int flag) {
     if (!IsConnected()) {
         return 0;
     }
-    int recv_size = recv(socket_, buffer, buffer_len, recv_flags_);
+    int recv_size = recv(socket_, buffer, buffer_len, flag);
     if (recv_size == 0) {
         CloseConnection();
+    }
+    if (recv_size < 0) {
+        if (errno == EBADF) {
+            CloseConnection();
+        } else if (errno == ECONNREFUSED) {
+            CloseConnection();
+        } else if (errno == ENOTCONN) {
+            CloseConnection();
+        } else if (errno == ENOTSOCK) {
+            CloseConnection();
+        }
     }
     return recv_size;
 }
@@ -49,10 +79,6 @@ bool Client::OpenConnection(const char* server_ip, unsigned short port) {
     is_connected_ = true;
     return true;
 }
-
-void Client::SetSendFlags(int flag) { send_flags_ = flag; }
-
-void Client::SetRecvFlags(int flag) { recv_flags_ = flag; }
 
 void Client::CloseConnection() {
     is_connected_ = false;

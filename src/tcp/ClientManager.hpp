@@ -12,11 +12,8 @@ public:
     ClientManager(int socket);
     ~ClientManager();
 
-    bool Send(const char* buffer, size_t buffer_len);
-    int Recv(char* buffer, size_t buffer_len);
-
-    void SetSendFlags(int flag);
-    void SetRecvFlags(int flag);
+    bool Send(const char* buffer, size_t buffer_len, int flag = MSG_NOSIGNAL);
+    int Recv(char* buffer, size_t buffer_len, int flag = MSG_NOSIGNAL);
 
     void CloseConnection();
     bool IsConnected() const;
@@ -24,8 +21,6 @@ public:
 private:
     bool is_connected_;
     int socket_;
-    int send_flags_ = MSG_NOSIGNAL;
-    int recv_flags_ = MSG_NOSIGNAL;
 };
 
 }  // namespace TCP

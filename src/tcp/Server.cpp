@@ -17,11 +17,11 @@ Server::~Server() {
 }
 
 bool Server::OpenPort(unsigned short port, int queue_limit) {
-    assert(port >= 0 && "Cannot open port with negative number");
+    assert(sockets_by_port_.find(port) == sockets_by_port_.end() &&
+           "Cannot open one port twice");
     assert(
         queue_limit > 0 &&
         "Cannot use negative number for queue limit for incoming connections");
-
     int sock;
     struct sockaddr_in serv_addr;
 

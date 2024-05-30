@@ -11,11 +11,8 @@ class Client {
 public:
     ~Client();
 
-    bool Send(const char* buffer, size_t buffer_len);
-    int Recv(char* buffer, size_t buffer_len);
-
-    void SetSendFlags(int flag);
-    void SetRecvFlags(int flag);
+    bool Send(const char* buffer, size_t buffer_len, int flag = MSG_NOSIGNAL);
+    int Recv(char* buffer, size_t buffer_len, int flag = MSG_NOSIGNAL);
 
     bool OpenConnection(const char* server_ip, unsigned short port);
     void CloseConnection();
@@ -23,9 +20,7 @@ public:
 
 private:
     bool is_connected_ = false;
-    int socket_ = 0;
-    int send_flags_ = MSG_NOSIGNAL;
-    int recv_flags_ = MSG_NOSIGNAL;
+    int socket_ = -1;
 };
 
 }  // namespace TCP
