@@ -13,23 +13,6 @@ file(GLOB TCP_ADAPTER_SRC CONFIGURE_DEPENDS
     "src/tcp/*.cpp"
 )
 
-set(ECHO_CLIENT_EXAMPLE_SRC
-    "src/example/EchoClient.cpp"
-)
-
-set(ECHO_SERVER_EXAMPLE_SRC
-    "src/example/EchoServer.cpp"
-)
-
-add_executable(EchoClientExample ${ECHO_CLIENT_EXAMPLE_SRC})
-add_executable(EchoServerExample ${ECHO_SERVER_EXAMPLE_SRC})
-
 add_library(TCP_ADAPTER ${TCP_ADAPTER_SRC})
 add_library(${PROJECT_NAME} ${TCP_ADAPTER_SRC})
 target_link_libraries(${PROJECT_NAME} TCP_ADAPTER)
-
-target_include_directories(EchoClientExample PRIVATE "include")
-target_include_directories(EchoServerExample PRIVATE "include")
-
-target_link_libraries(EchoClientExample ${PROJECT_NAME})
-target_link_libraries(EchoServerExample ${PROJECT_NAME})
